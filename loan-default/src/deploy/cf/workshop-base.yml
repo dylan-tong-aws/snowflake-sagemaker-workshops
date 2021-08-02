@@ -3,24 +3,17 @@ Description: >-
   Create base resouces for the workshop
   Author: Dylan Tong, AWS
 Parameters:
-  pExternalStageBaseName:
+  pExternalStageBucketName:
     AllowedPattern: '[A-Za-z0-9-]{1,63}'
     ConstraintDescription: >-
-      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not spaces. Must be unique within your
-      account in an AWS Region.
-    Description: >-
-      Must be unique. Provide a base name of the default S3 bucket that will be used to as a Snowflake external stage.
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not
+      spaces. Must be unique within your account in an AWS Region.
+    Description: S3 bucket name used as the solution's workspace. Do not modify if you want to use the default.
     MaxLength: 63
-    MinLength: 1    
+    MinLength: 1
     Type: String
-    Default: snowflake-sagemaker
+    Default: "-"
 Resources:
-  SnowflakeExternalStage:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub 
-        - ${Workspace}-${AWS::Region}-${AWS::AccountId}
-        - Workspace: !Ref pExternalStageBaseName
   SnowflakeDataWranglerRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -75,4 +68,4 @@ Resources:
                       }
                   ]
               }
-            - Bucket: !Ref SnowflakeExternalStage
+            - Bucket: !Ref pExternalStageBucketName

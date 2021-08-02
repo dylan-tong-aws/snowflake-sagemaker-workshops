@@ -12,7 +12,7 @@ Metadata:
       - Label: 
           default: Snowflake Configurations
         Parameters:
-          - pExternalStage
+          - pExternalStageBaseName
       - Label:
           default: Amazon SageMaker Studio Configurations
         Parameters:
@@ -30,7 +30,7 @@ Metadata:
     ParameterLabels:
       pTemplatesURL:
         default: "Workshop Templates URL"
-      pExternalStage:
+      pExternalStageBaseName:
         default: "[Required] Snowflake External Stage (S3 Bucket Name)"
       pDomainName:
         default: "Amazon SageMaker Studio Domain Name"
@@ -49,7 +49,7 @@ Parameters:
     MinLength: 10    
     Type: String
     Default: "https://dtong-public-fileshare.s3-us-west-2.amazonaws.com/snowflake-sagemaker-workshop/src/deploy/cf/"
-  pExternalStage:
+  pExternalStageBaseName:
     AllowedPattern: '[A-Za-z0-9-]{1,63}'
     ConstraintDescription: >-
       Maximum of 63 alphanumeric characters. Can include hyphens (-), but not spaces. Must be unique within your account
@@ -92,21 +92,13 @@ Parameters:
     Type: CommaDelimitedList
     Default: ''
 Resources:
-  BaseStack:
+  FullKernelBuilderStack: 
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub
-        - "${TemplatesURL}workshop-base.yml"
-        - TemplatesURL: !Ref pTemplatesURL
+      TemplateURL: https://dtong-public-fileshare.s3.us-west-2.amazonaws.com/kernel-builder/src/deploy/cf/kernel-builder-full.yml
       Parameters:
-        pExternalStageBaseName: !Ref pExternalStage
-  SageMakerStudioStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub
-        - "${TemplateURL}deploy-sagemaker-studio-public-internet.yml"
-        - TemplateURL: !Ref pTemplatesURL 
-      Parameters:
+        pSolutionRepository: dtong-public-fileshare
+        pWorkspaceBaseName: !Ref pExternalStageBaseName
         pDomainName: !Ref pDomainName
         pVpcId: !Ref pVpcId
         pSubnets: !Join
@@ -116,3 +108,24 @@ Resources:
         pSecurityGroups: !Join
           - ","
           - !Ref pSecurityGroups
+        pProjectName: workshop-kernel-builder
+        pImageType: aws/codebuild/standard:5.0
+        pRepoName: sagemaker-snowflake-workshop
+        pKernelImageName: snowflake-workshop
+  WorkshopResourceStack:
+    DependsOn: 
+      - FullKernelBuilderStack
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - "${TemplatesURL}workshop-base.yml"
+        - TemplatesURL: !Ref pTemplatesURL
+      Parameters:
+        pExternalStageBucketName: !GetAtt      
+          - FullKernelBuilderStack
+          - Outputs.Workspace
+Outputs:
+  ExternalStageName: 
+    Value: !GetAtt      
+      - FullKernelBuilderStack
+      - Outputs.Workspace
