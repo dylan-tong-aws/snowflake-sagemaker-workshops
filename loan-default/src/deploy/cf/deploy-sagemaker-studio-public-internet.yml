@@ -1,0 +1,159 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  CloudFormation template for deploying a SageMaker Studio Environment Author:
+  Dylan Tong, AWS
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Amazon SageMaker Studio Configurations
+        Parameters:
+          - pDomainName
+          - pUserName
+          - pSageMakerServiceRole
+          - pVpcId
+          - pSubnets
+      - Label:
+          default: Optional Configurations
+        Parameters:
+          - pSecurityGroups
+    ParameterLabels:
+      pDomainName:
+        default: Amazon SageMaker Studio Domain Name
+      pSageMakerServiceRole:
+        default: Permissions (IAM Role Name)
+      pVpcId:
+        default: VPC 
+      pSubnets:
+        default: VPC Subnets
+      pUserName:
+        default: User Profile Name
+      pSecurityGroups:
+        default: Security Group
+Parameters:
+  pDomainName:
+    AllowedPattern: '[A-Za-z0-9-]{1,63}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not
+      spaces. Must be unique within your account in an AWS Region.
+    Description: Name of the Amazon SageMaker Studio domain
+    MaxLength: 63
+    MinLength: 1
+    Type: String
+    Default: cf-sagemaker-studio
+  pSageMakerServiceRole:
+    Description: >- 
+      Optionally, provide an IAM Role ARN to serve as the security context for your Amazon SageMaker Studio environment.
+      If you don't provide a value, a role will be created for you.
+    Type: String
+    Default: "-"
+  pVpcId:
+    Description: Choose a VPC for SageMaker Studio
+    Type: String
+  pSubnets:
+    Description: Choose a subnet in an availability zone supported by Amazon SageMaker.
+    Type: CommaDelimitedList
+  pUserName:
+    AllowedPattern: '[A-Za-z0-9-]{1,20}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not
+      spaces. Must be unique within your account in an AWS Region.
+    Description: Provide a name for the profile that you will use to log into Amazon SageMaker Studio.
+    MaxLength: 63
+    MinLength: 1
+    Type: String
+  pSecurityGroups:
+    Description: >- 
+      This is optional. Configure your Security groups for SageMaker Studio: 
+      (https://docs.aws.amazon.com/sagemaker/latest/dg/onboard-vpc.html)
+    Type: CommaDelimitedList
+    Default: ''
+Conditions:
+  UseSGs: !Not
+    - !Equals
+      - !Select [0, !Ref pSecurityGroups]
+      - ''
+  CreateSageMakerRole: !Equals
+    - !Ref pSageMakerServiceRole
+    - "-"
+Resources:
+  SageMakerExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Condition: CreateSageMakerRole
+    Properties:
+      RoleName: !Sub 'cf-sm-studio-role-${AWS::Region}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - sagemaker.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSageMakerFullAccess'
+        - 'arn:aws:iam::aws:policy/SecretsManagerReadWrite'
+      Policies:
+        - PolicyName: !Sub 'kb-sm-exec-inline-${AWS::Region}'
+          PolicyDocument: |-
+              {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                      {
+                          "Effect": "Allow",
+                          "Action": "iam:GetRole",
+                          "Resource": "*"
+                      },
+                      {
+                          "Effect": "Allow",
+                          "Action": [
+                              "s3:PutObject",
+                              "s3:GetObject",
+                              "s3:ListBucket",
+                              "s3:DeleteObject"
+                          ],
+                          "Resource": "arn:aws:s3:::*"
+                      }
+                  ]
+              }
+  StudioDomainPublic:
+    Type: 'AWS::SageMaker::Domain'
+    Properties:
+      AppNetworkAccessType: PublicInternetOnly
+      AuthMode: IAM
+      DefaultUserSettings:
+        ExecutionRole: !If
+          - CreateSageMakerRole
+          - !GetAtt SageMakerExecutionRole.Arn
+          - !Sub 
+            - arn:aws:iam::${AWS::AccountId}:role/${ExecutionRole}
+            - ExecutionRole: !Ref pSageMakerServiceRole
+        SecurityGroups: !If 
+          - UseSGs
+          - !Ref pSecurityGroups
+          - !Ref AWS::NoValue
+      DomainName: !Ref pDomainName
+      SubnetIds: !Ref pSubnets
+      VpcId: !Ref pVpcId
+  UserProfile:
+    Type: AWS::SageMaker::UserProfile
+    Properties: 
+      DomainId: !Ref StudioDomainPublic
+      UserProfileName: !Ref pUserName
+      UserSettings:
+        ExecutionRole: !If
+          - CreateSageMakerRole
+          - !GetAtt SageMakerExecutionRole.Arn
+          - !Sub 
+            - arn:aws:iam::${AWS::AccountId}:role/${ExecutionRole}
+            - ExecutionRole: !Ref pSageMakerServiceRole
+Outputs:
+  DomainId: 
+    Value: !Ref StudioDomainPublic
+  ExecutionRole: 
+    Value: !If
+      - CreateSageMakerRole
+      - !Ref SageMakerExecutionRole
+      - !Ref pSageMakerServiceRole

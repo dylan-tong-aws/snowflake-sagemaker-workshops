@@ -1,0 +1,3 @@
+[submodule "common/src/deploy/kernel-builder"]
+	path = common/src/deploy/kernel-builder
+	url = https://github.com/aws-samples/amazon-sagemaker-kernel-builder.git

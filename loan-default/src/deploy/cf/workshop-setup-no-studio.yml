@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  This template setups the environment for the Snowflake SageMaker workshops.
+  Author: Dylan Tong, AWS
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Repository Configurations
+        Parameters:
+          - pTemplatesURL
+      - Label: 
+          default: Snowflake Configurations
+        Parameters:
+          - pExternalStage
+    ParameterLabels:
+      pTemplatesURL:
+        default: "Workshop Templates URL"
+      pExternalStage:
+        default: "[Required] Snowflake External Stage (S3 Bucket Name)"
+Parameters:
+  pTemplatesURL:
+    Description: >-
+      The S3 URL path containing the CloudFormation templates used to deploy the workshop resources.
+    MinLength: 10    
+    Type: String
+    Default: "https://dtong-public-fileshare.s3.us-west-2.amazonaws.com/snowflake-sagemaker-workshop/src/deploy/cf/"
+  pExternalStage:
+    AllowedPattern: '[A-Za-z0-9-]{1,63}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not spaces. Must be unique within your account
+      in an AWS Region.
+    Description: >-
+      Must be unique. Provide a base name for an S3 bucket that will be created and used as a Snowflake external stage.
+    MaxLength: 63
+    MinLength: 1    
+    Type: String
+    Default: snowflake-sagemaker
+Resources:
+  BaseStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - "${TemplateURL}workshop-base.yml"
+        - TemplateURL: !Ref pTemplatesURL
+      Parameters:
+        pExternalStageBaseName: !Ref pExternalStage

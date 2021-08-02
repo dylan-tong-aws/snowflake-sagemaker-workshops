@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  This template setups the environment for the Snowflake SageMaker workshops.
+  Author: Dylan Tong, AWS
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Repository Configurations
+        Parameters:
+          - pTemplatesURL
+      - Label: 
+          default: Snowflake Configurations
+        Parameters:
+          - pExternalStage
+      - Label:
+          default: Amazon SageMaker Studio Configurations
+        Parameters:
+          - pDomainName
+          - pUserName
+      - Label:
+          default: VPC Configurations
+        Parameters:
+          - pVpcId
+          - pSubnets
+      - Label:
+          default: Optional VPC Configurations
+        Parameters:
+          - pSecurityGroups
+    ParameterLabels:
+      pTemplatesURL:
+        default: "Workshop Templates URL"
+      pExternalStage:
+        default: "[Required] Snowflake External Stage (S3 Bucket Name)"
+      pDomainName:
+        default: "Amazon SageMaker Studio Domain Name"
+      pVpcId:
+        default: "VPC" 
+      pSubnets:
+        default: "VPC Subnets"
+      pUserName:
+        default: "User Profile Name"
+      pSecurityGroups:
+        default: "[Optional] Security Groups"
+Parameters:
+  pTemplatesURL:
+    Description: >-
+      The S3 URL path containing the CloudFormation templates used to deploy the workshop resources.
+    MinLength: 10    
+    Type: String
+    Default: "https://dtong-public-fileshare.s3-us-west-2.amazonaws.com/snowflake-sagemaker-workshop/src/deploy/cf/"
+  pExternalStage:
+    AllowedPattern: '[A-Za-z0-9-]{1,63}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not spaces. Must be unique within your account
+      in an AWS Region.
+    Description: >-
+      Must be unique. Provide a base name for an S3 bucket that will be created and used as a Snowflake external stage.
+    MaxLength: 63
+    MinLength: 1    
+    Type: String
+    Default: snowflake-sagemaker
+  pDomainName:
+    AllowedPattern: '[A-Za-z0-9-]{1,63}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not spaces. Must be unique within your account in an
+      AWS Region.
+    Description: Name of the Amazon SageMaker Studio domain
+    MaxLength: 63
+    MinLength: 1
+    Type: String
+    Default: sagemaker-studio-cf-managed
+  pVpcId:
+    Description: Choose a VPC for SageMaker Studio
+    Type: 'AWS::EC2::VPC::Id'
+  pSubnets:
+    Description: Choose a subnet in an availability zone supported by Amazon SageMaker.
+    Type: 'List<AWS::EC2::Subnet::Id>'
+  pUserName:
+    AllowedPattern: '[A-Za-z0-9-]{1,20}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not spaces. Must be unique within your account in 
+      an AWS Region.
+    Description: Provide a name for the profile that you will use to log into Amazon SageMaker Studio.
+    MaxLength: 63
+    MinLength: 1
+    Type: String
+    Default: "sagemaker-user"
+  pSecurityGroups:
+    Description: >- 
+      This is optional. Configure your security groups for SageMaker Studio (https://docs.aws.amazon.com/sagemaker/latest/dg/onboard-vpc.html)
+    Type: CommaDelimitedList
+    Default: ''
+Resources:
+  BaseStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - "${TemplatesURL}workshop-base.yml"
+        - TemplatesURL: !Ref pTemplatesURL
+      Parameters:
+        pExternalStageBaseName: !Ref pExternalStage
+  SageMakerStudioStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - "${TemplateURL}deploy-sagemaker-studio-public-internet.yml"
+        - TemplateURL: !Ref pTemplatesURL 
+      Parameters:
+        pDomainName: !Ref pDomainName
+        pVpcId: !Ref pVpcId
+        pSubnets: !Join
+          - ","
+          - !Ref pSubnets
+        pUserName: !Ref pUserName
+        pSecurityGroups: !Join
+          - ","
+          - !Ref pSecurityGroups

@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Create base resouces for the workshop
+  Author: Dylan Tong, AWS
+Parameters:
+  pExternalStageBaseName:
+    AllowedPattern: '[A-Za-z0-9-]{1,63}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not spaces. Must be unique within your
+      account in an AWS Region.
+    Description: >-
+      Must be unique. Provide a base name of the default S3 bucket that will be used to as a Snowflake external stage.
+    MaxLength: 63
+    MinLength: 1    
+    Type: String
+    Default: snowflake-sagemaker
+Resources:
+  SnowflakeExternalStage:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 
+        - ${Workspace}-${AWS::Region}-${AWS::AccountId}
+        - Workspace: !Ref pExternalStageBaseName
+  SnowflakeDataWranglerRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub 'snowflake-datawrangler-role-${AWS::Region}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                "sts:ExternalId": "RUN_DESC_INTEGRATION_TO_GET_EXTERNALID"
+      Path: /
+      Policies:
+        - PolicyName: !Sub 'snowflake-datawrangler-s3-access-${AWS::Region}'
+          PolicyDocument: !Sub
+            - |-
+              {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                      {
+                          "Effect": "Allow",
+                          "Action": [
+                              "s3:PutObject",
+                              "s3:GetObject",
+                              "s3:GetObjectVersion",
+                              "s3:DeleteObject",
+                              "s3:DeleteObjectVersion"
+                          ],
+                          "Resource": [
+                              "arn:aws:s3:::${Bucket}/stage/*"
+                          ]
+                      },
+                      {
+                          "Effect": "Allow",
+                          "Action": [
+                              "s3:ListBucket"
+                          ],
+                          "Resource": [
+                              "arn:aws:s3:::${Bucket}"
+                          ],
+                          "Condition": {
+                              "StringLike": {
+                                  "s3:prefix": [
+                                      "stage/*"
+                                  ]
+                              }
+                          }
+                      }
+                  ]
+              }
+            - Bucket: !Ref SnowflakeExternalStage

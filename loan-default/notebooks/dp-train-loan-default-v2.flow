@@ -1,0 +1,383 @@
+{
+  "metadata": {
+    "version": 1,
+    "disable_limits": false
+  },
+  "nodes": [
+    {
+      "node_id": "dd679054-bbf6-496f-b782-3223b8bb34c3",
+      "type": "SOURCE",
+      "operator": "sagemaker.snowflake_source_0.1",
+      "parameters": {
+        "dataset_definition": {
+          "__typename": "SnowflakeDatasetDefinition",
+          "datasetSourceType": "Snowflake",
+          "name": "snowflake-loan-train",
+          "warehouse": "\"ABENGEL_WH\"",
+          "storageIntegration": "\"SAGEMAKER_DATAWRANGLER_INTEGRATION_2\"",
+          "database": "\"ABENGEL_DB\"",
+          "schema": "\"INFORMATION_SCHEMA\"",
+          "queryString": "SELECT LOAN_ID, LOAN_AMNT, FUNDED_AMNT, TERM, INT_RATE, INSTALLMENT, GRADE, SUB_GRADE, EMP_LENGTH, HOME_OWNERSHIP, ANNUAL_INC, VERIFICATION_STATUS, PYMNT_PLAN, PURPOSE, ZIP_SCODE, DTI, DELINQ_2YRS, EARLIEST_CR_LINE, INQ_LAST_6MON, MNTHS_SINCE_LAST_DELINQ, MNTHS_SINCE_LAST_RECORD, OPEN_ACC, PUB_REC, REVOL_BAL, REVOL_UTIL, TOTAL_ACC, INITIAL_LIST_STATUS, MTHS_SINCE_LAST_MAJOR_DEROG, POLICY_CODE, LOAN_DEFAULT, ISSUE_MONTH FROM ML_LENDER_DATA.ML_DATA.LOAN_DATA_ML sample block (80) REPEATABLE(100)",
+          "secretsManagerArn": "arn:aws:secretsmanager:us-west-1:407247006381:secret:AmazonSageMaker-fbdf61b0ad904b918189bece0ba112b2-EnYznk",
+          "s3OutputLocation": "s3://snowflake-sagemaker-us-west-1-407247006381/snowflake/",
+          "outputFormat": "parquet"
+        }
+      },
+      "trained_parameters": {
+        "query_execution_id": "019d9165-0502-38db-0000-0ac10087ad1e",
+        "query_status": "SUCCESS",
+        "copy_s3_output_location": "s3://snowflake-sagemaker-us-west-1-407247006381/snowflake/e7b65aa912b64c8b88858a3fe55b81d8/data/"
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "default",
+          "sampling": {
+            "sampling_method": "sample_by_limit",
+            "limit_rows": 50000
+          }
+        }
+      ]
+    },
+    {
+      "node_id": "5cd2b932-8e07-4691-84d9-0c7cc33c996d",
+      "type": "TRANSFORM",
+      "operator": "sagemaker.spark.infer_and_cast_type_0.1",
+      "parameters": {},
+      "trained_parameters": {
+        "schema": {
+          "TERM": "string",
+          "INT_RATE": "string",
+          "GRADE": "string",
+          "SUB_GRADE": "string",
+          "EMP_LENGTH": "string",
+          "HOME_OWNERSHIP": "string",
+          "VERIFICATION_STATUS": "string",
+          "PYMNT_PLAN": "string",
+          "PURPOSE": "string",
+          "ZIP_SCODE": "string",
+          "MNTHS_SINCE_LAST_DELINQ": "string",
+          "MNTHS_SINCE_LAST_RECORD": "string",
+          "INITIAL_LIST_STATUS": "string",
+          "MTHS_SINCE_LAST_MAJOR_DEROG": "string",
+          "LOAN_ID": "float",
+          "LOAN_AMNT": "float",
+          "FUNDED_AMNT": "float",
+          "INSTALLMENT": "float",
+          "ANNUAL_INC": "float",
+          "DTI": "float",
+          "DELINQ_2YRS": "float",
+          "EARLIEST_CR_LINE": "object",
+          "INQ_LAST_6MON": "float",
+          "OPEN_ACC": "float",
+          "PUB_REC": "float",
+          "REVOL_BAL": "float",
+          "REVOL_UTIL": "float",
+          "TOTAL_ACC": "float",
+          "POLICY_CODE": "float",
+          "LOAN_DEFAULT": "float",
+          "ISSUE_MONTH": "float"
+        }
+      },
+      "inputs": [
+        {
+          "name": "default",
+          "node_id": "dd679054-bbf6-496f-b782-3223b8bb34c3",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "3a651349-5f56-43ee-a1a5-b62464eb9823",
+      "type": "VISUALIZATION",
+      "operator": "sagemaker.visualizations.histogram_0.1",
+      "parameters": {
+        "name": "Loan Distribution",
+        "x_axis": "LOAN_DEFAULT"
+      },
+      "inputs": [
+        {
+          "name": "df",
+          "node_id": "5cd2b932-8e07-4691-84d9-0c7cc33c996d",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "b84d86a6-f3e3-49f8-9631-781e9785702d",
+      "type": "TRANSFORM",
+      "operator": "sagemaker.spark.search_and_edit_0.1",
+      "parameters": {
+        "operator": "Find and replace substring",
+        "find_and_replace_substring_parameters": {
+          "input_column": "INT_RATE",
+          "pattern": "%",
+          "replacement": ""
+        }
+      },
+      "inputs": [
+        {
+          "name": "df",
+          "node_id": "5cd2b932-8e07-4691-84d9-0c7cc33c996d",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "ce47b5cd-1a27-4fc1-918e-ec40735cd3e5",
+      "type": "TRANSFORM",
+      "operator": "sagemaker.spark.cast_single_data_type_0.1",
+      "parameters": {
+        "column": "INT_RATE",
+        "original_data_type": "String",
+        "data_type": "float"
+      },
+      "inputs": [
+        {
+          "name": "df",
+          "node_id": "b84d86a6-f3e3-49f8-9631-781e9785702d",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "12af5c4b-afda-4842-839b-f11aa2997cd8",
+      "type": "TRANSFORM",
+      "operator": "sagemaker.spark.custom_pyspark_0.1",
+      "parameters": {
+        "code": "from pyspark.sql.functions import udf\nfrom pyspark.sql.types import LongType\n\ndef categories(status) : \n  if not status :\n    return None\n  elif status == \"not verified\" :    \n    return 0\n  elif status == \"VERIFIED - income\":\n    return 1\n  elif status == \"VERIFIED - income source\":\n    return 1\n  else :\n    return None\n\nbucket_udf = udf(categories, LongType()) \ndf = df.withColumn(\"VERFIED\", bucket_udf(\"VERIFICATION_STATUS\"))# Table is available as variable `df`\n"
+      },
+      "inputs": [
+        {
+          "name": "df",
+          "node_id": "ce47b5cd-1a27-4fc1-918e-ec40735cd3e5",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "54fbe7e1-3344-4d85-9bad-a6dcf87a2a58",
+      "type": "TRANSFORM",
+      "operator": "sagemaker.spark.manage_columns_0.1",
+      "parameters": {
+        "operator": "Drop column",
+        "drop_column_parameters": {
+          "column_to_drop": "VERIFICATION_STATUS"
+        }
+      },
+      "inputs": [
+        {
+          "name": "df",
+          "node_id": "12af5c4b-afda-4842-839b-f11aa2997cd8",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "89900798-8fc0-4806-9a52-0d37e05f3306",
+      "type": "SOURCE",
+      "operator": "sagemaker.snowflake_source_0.1",
+      "parameters": {
+        "dataset_definition": {
+          "__typename": "SnowflakeDatasetDefinition",
+          "datasetSourceType": "Snowflake",
+          "name": "unemployment-train-data",
+          "warehouse": "\"ABENGEL_WH\"",
+          "storageIntegration": "\"SAGEMAKER_DATAWRANGLER_INTEGRATION_2\"",
+          "database": "\"ABENGEL_DB\"",
+          "schema": "\"INFORMATION_SCHEMA\"",
+          "queryString": "SELECT LOAN_ID, UNEMPLOYMENT_RATE FROM ML_LENDER_DATA.ML_DATA.UNEMPLOYMENT_DATA",
+          "secretsManagerArn": "arn:aws:secretsmanager:us-west-1:407247006381:secret:AmazonSageMaker-fbdf61b0ad904b918189bece0ba112b2-EnYznk",
+          "s3OutputLocation": "s3://snowflake-sagemaker-us-west-1-407247006381/snowflake/",
+          "outputFormat": "parquet"
+        }
+      },
+      "trained_parameters": {
+        "query_execution_id": "019d91a8-0502-399b-0000-0ac100882016",
+        "query_status": "SUCCESS",
+        "copy_s3_output_location": "s3://snowflake-sagemaker-us-west-1-407247006381/snowflake/8053fe7686234affbb64f9a7160cb921/data/"
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "default",
+          "sampling": {
+            "sampling_method": "sample_by_limit",
+            "limit_rows": 50000
+          }
+        }
+      ]
+    },
+    {
+      "node_id": "ebcf7ba0-6bc8-476d-8667-6ef1d3e42ede",
+      "type": "TRANSFORM",
+      "operator": "sagemaker.spark.infer_and_cast_type_0.1",
+      "parameters": {},
+      "trained_parameters": {
+        "schema": {
+          "LOAN_ID": "float",
+          "UNEMPLOYMENT_RATE": "float"
+        }
+      },
+      "inputs": [
+        {
+          "name": "default",
+          "node_id": "89900798-8fc0-4806-9a52-0d37e05f3306",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "e6e45359-c7b3-4c18-9c81-944c10689d28",
+      "type": "TRANSFORM",
+      "operator": "sagemaker.spark.join_tables_0.1",
+      "parameters": {
+        "left_column": "LOAN_ID",
+        "right_column": "LOAN_ID",
+        "join_type": "leftouter"
+      },
+      "inputs": [
+        {
+          "name": "df",
+          "node_id": "54fbe7e1-3344-4d85-9bad-a6dcf87a2a58",
+          "output_name": "default"
+        },
+        {
+          "name": "df",
+          "node_id": "ebcf7ba0-6bc8-476d-8667-6ef1d3e42ede",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "eafa269a-acc7-4901-b869-cb34934c6d86",
+      "type": "TRANSFORM",
+      "operator": "sagemaker.spark.manage_columns_0.1",
+      "parameters": {
+        "operator": "Drop column",
+        "drop_column_parameters": {
+          "column_to_drop": "LOAN_ID_0"
+        }
+      },
+      "inputs": [
+        {
+          "name": "df",
+          "node_id": "e6e45359-c7b3-4c18-9c81-944c10689d28",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "6ba9148c-335d-431f-acea-15911662026d",
+      "type": "TRANSFORM",
+      "operator": "sagemaker.spark.manage_columns_0.1",
+      "parameters": {
+        "operator": "Drop column",
+        "drop_column_parameters": {
+          "column_to_drop": "LOAN_ID_1"
+        }
+      },
+      "inputs": [
+        {
+          "name": "df",
+          "node_id": "eafa269a-acc7-4901-b869-cb34934c6d86",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "a327e209-0ffb-4a6d-8fa0-7e753baac0f1",
+      "type": "VISUALIZATION",
+      "operator": "sagemaker.visualizations.target_leakage_0.1",
+      "parameters": {
+        "name": "target leakage",
+        "max_features": "30",
+        "problem_type": "classification",
+        "target": "LOAN_DEFAULT"
+      },
+      "inputs": [
+        {
+          "name": "df",
+          "node_id": "6ba9148c-335d-431f-acea-15911662026d",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    },
+    {
+      "node_id": "4a73fe2c-b1d3-4075-94d0-586f20b525ef",
+      "type": "VISUALIZATION",
+      "operator": "sagemaker.visualizations.quick_model_0.1",
+      "parameters": {
+        "name": "Quick Test",
+        "label": "LOAN_DEFAULT"
+      },
+      "inputs": [
+        {
+          "name": "df",
+          "node_id": "6ba9148c-335d-431f-acea-15911662026d",
+          "output_name": "default"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "default"
+        }
+      ]
+    }
+  ]
+}
