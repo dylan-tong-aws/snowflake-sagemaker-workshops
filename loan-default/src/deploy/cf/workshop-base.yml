@@ -47,7 +47,7 @@ Resources:
                               "s3:DeleteObjectVersion"
                           ],
                           "Resource": [
-                              "arn:aws:s3:::${Bucket}/stage/*"
+                              "arn:aws:s3:::${Bucket}/*"
                           ]
                       },
                       {
@@ -55,16 +55,7 @@ Resources:
                           "Action": [
                               "s3:ListBucket"
                           ],
-                          "Resource": [
-                              "arn:aws:s3:::${Bucket}"
-                          ],
-                          "Condition": {
-                              "StringLike": {
-                                  "s3:prefix": [
-                                      "stage/*"
-                                  ]
-                              }
-                          }
+                          "Resource": "arn:aws:s3:::${Bucket}"
                       }
                   ]
               }
