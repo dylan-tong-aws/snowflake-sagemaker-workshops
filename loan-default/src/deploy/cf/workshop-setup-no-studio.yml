@@ -13,6 +13,11 @@ Metadata:
           default: Snowflake Configurations
         Parameters:
           - pExternalStageBaseName
+          - psnowflakeStorageIntegrationName
+          - psnowflakeUsername
+          - psnowflakePassword
+          - psnowflakeAccount
+          - psnowflakeRole
       - Label:
           default: Amazon SageMaker Studio Configurations
         Parameters:
@@ -22,6 +27,16 @@ Metadata:
         default: "Workshop Templates URL"
       pExternalStageBaseName:
         default: "[Required] Snowflake External Stage (S3 Bucket Name)"
+      psnowflakeStorageIntegrationName:
+        default: "[Required] Snowflake Storage Integration Name"  
+      psnowflakeUsername:
+        default: "[Required] Snowflake User Name"        
+      psnowflakePassword:
+        default: "[Required] Snowflake Password"  
+      psnowflakeAccount:
+        default: "[Required] Snowflake Account"  
+      psnowflakeRole:
+        default: "[Required] Snowflake Role"  
       pDomainId:
         default: "[Required] Amazon SageMaker Studio (Domain) Id"
 Parameters:
@@ -42,6 +57,32 @@ Parameters:
     MinLength: 1    
     Type: String
     Default: snowflake-sagemaker
+  psnowflakeStorageIntegrationName:
+    AllowedPattern: '[A-Z0-9]{1,63}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Use only UPPERCASE include underscores, but not hyphens or spaces. 
+    Description: >-
+      Provide a base name for the Snowflake storage integration name.
+    MaxLength: 63
+    MinLength: 1    
+    Type: String
+    Default: "SMSNOW"
+  psnowflakeUsername:
+    Type: String
+    Description: "Snowflake username" 
+    Default: ML_USER
+  psnowflakePassword:
+    NoEcho: true
+    Type: String
+    Description: "Snowflake password"  
+  psnowflakeAccount:
+    Type: String
+    Description: "Snowflake account"  
+  psnowflakeRole:
+    Type: String
+    Description: "Snowflake Role with permissions to create Storage Integrations, API Integrations and Functions"
+    MinLength: 1     
+    Default: ML_ROLE   
   pDomainId:
     AllowedPattern: '[A-Za-z0-9-]{1,63}'
     ConstraintDescription: >-
@@ -51,6 +92,50 @@ Parameters:
     MaxLength: 63
     MinLength: 1
     Type: String
+Mappings:
+  RegionToUpperMap:
+    us-east-2:
+      Name: USEAST2
+    us-east-1:
+      Name: USEAST1
+    us-west-1:
+      Name: USWEST1
+    us-west-2:
+      Name: USWEST2
+    af-south-1:
+      Name: AFSOUTH1
+    ap-east-1:
+      Name: APEAST1
+    ap-south-1:
+      Name: APSOUTH1
+    ap-northeast-3:
+      Name: APNORTHEAST3
+    ap-northeast-2:
+      Name: APNORTHEAST2
+    ap-southeast-1:
+      Name: APSOUTHEAST1
+    ap-southeast-2:
+      Name: APSOUTHEAST2
+    ap-northeast-1:
+      Name: APNORTHEAST1
+    ca-central-1:
+      Name: CACENTRAL1
+    eu-central-1:
+      Name: EUCENTRAL1
+    eu-west-1:
+      Name: EUWEST1
+    eu-west-2:
+      Name: EUWEST2
+    eu-south-1:
+      Name: EUSOUTH1
+    eu-west-3:
+      Name: EUWEST3
+    eu-north-1:
+      Name: EUNORTH1
+    me-south-1:
+      Name: MESOUTH1
+    sa-east-1:
+      Name: SAEAST1
 Resources:
   BuildAndPubKernelBuilderStack: 
     Type: AWS::CloudFormation::Stack
@@ -64,18 +149,26 @@ Resources:
         pImageType: aws/codebuild/standard:5.0
         pRepoName: sagemaker-snowflake-workshop
         pKernelImageName: snowflake-workshop
-  WorkshopResourceStack:
-    DependsOn: 
-      - BuildAndPubKernelBuilderStack
+  StorageIntegrationStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub
-        - "${TemplatesURL}workshop-base.yml"
-        - TemplatesURL: !Ref pTemplatesURL
+      TemplateURL: https://snowflake-corp-se-workshop.s3.us-west-1.amazonaws.com/VHOL_Snowflake_Data_Wrangler/V2/cft/createstorageintegration.yml
       Parameters:
-        pExternalStageBucketName: !GetAtt      
-          - BuildAndPubKernelBuilderStack
-          - Outputs.Workspace
+        StorageStackName: snowflake-sagemaker
+        s3BucketName: !Sub
+          - "${s3BucketBase}-storeint-${AWS::Region}-${AWS::AccountId}"
+          - s3BucketBase: !Ref pExternalStageBaseName
+        snowflakeStorageIntegrationName: !Sub 
+          - "${integrationName}_${region}_${AWS::AccountId}"
+          - integrationName: !Ref psnowflakeStorageIntegrationName
+            region: !FindInMap 
+                - RegionToUpperMap
+                - !Ref AWS::Region
+                - Name
+        snowflakeUsername: !Ref psnowflakeUsername
+        snowflakePassword: !Ref psnowflakePassword
+        snowflakeAccount: !Ref psnowflakeAccount
+        snowflakeRole: !Ref psnowflakeRole 
 Outputs:
   ExternalStageName: 
     Value: !GetAtt      
