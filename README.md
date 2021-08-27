@@ -1,10 +1,9 @@
-# Snowflake + Amazon SageMaker Workshops [BETA]
-
-The workshop assets in this repository are currently in **BETA**. We're currently working on simplifying the setup process. Reach out to dylatong@amazon.com if you have feeedback.
-
+# Snowflake + Amazon SageMaker Workshops
 
 ### Loan Default Workshop
 ----
+
+In this workshop you'll learn how to facilitate a data-centric AI development process using Snowflake and Amazon SageMaker. In the workshop you will build a loan default model on personal loans data dervied from the Lending Club. As part of a iterative process we'll improve our dataset by enriching it with unemployment rate data provided by Knoema.
 
 1. **Environment Setup:**
 
