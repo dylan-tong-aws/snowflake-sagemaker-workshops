@@ -1,9 +1,11 @@
 # Snowflake + Amazon SageMaker Workshops
 
-### Loan Default Workshop
+### Data Centric AI: Credit Risk Workshop
 ----
 
-In this workshop you'll learn how to facilitate a data-centric AI development process using Snowflake and Amazon SageMaker. In the workshop you will build a loan default model on personal loans data dervied from the Lending Club. As part of a iterative process we'll improve our dataset by enriching it with unemployment rate data provided by Knoema.
+In this workshop you'll learn how to facilitate a data-centric AI development process using Snowflake and Amazon SageMaker. In the workshop you will build a credit risk model on personal loans data dervied from the Lending Club. As part of a iterative process we'll improve our dataset by enriching it with unemployment rate data provided by Knoema.
+
+The guide for the workshop is hosted by Snowflake for self-service as a Snowflake Quick-start. Follow this [link](https://quickstarts.snowflake.com/guide/vhol_snowflake_data_wrangler/index.html?index=..%2F..index#0)
 
 1. **Environment Setup:**
 
