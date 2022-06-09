@@ -5,7 +5,6 @@ from io import StringIO
 import pandas as pd
 import numpy as np
 
-
 def model_fn(model_dir):
     """loads model from previously saved artifact"""
     model = TabularPredictor.load(model_dir)
