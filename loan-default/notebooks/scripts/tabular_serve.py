@@ -17,13 +17,8 @@ def transform_fn(model, request_body, input_content_type, output_content_type="a
 
     if input_content_type == "text/csv":
         buf = StringIO(request_body)
-        data = pd.read_csv(buf)
-        
-        #temporary workaround
-        label = data.iloc[:,0:1]
-        features = data.iloc[:,1:]
-    
-        num_cols = len(features.columns)
+        data = pd.read_csv(buf, header=None)
+        num_cols = len(data.columns)
 
         if num_cols != len(column_names):
             raise Exception(
@@ -31,13 +26,13 @@ def transform_fn(model, request_body, input_content_type, output_content_type="a
             )
 
         else:
-            features.columns = column_names
+            data.columns = column_names
 
     else:
         raise Exception(f"{input_content_type} content type not supported")
-    
-    pred = model.predict(features)
-    pred_proba = model.predict_proba(features)
-    prediction = pd.concat([label.squeeze(), pred, pred_proba], axis=1).values
+
+    pred = model.predict(data)
+    pred_proba = model.predict_proba(data)
+    prediction = pd.concat([pred, pred_proba], axis=1).values
 
     return json.dumps(prediction.tolist()), output_content_type

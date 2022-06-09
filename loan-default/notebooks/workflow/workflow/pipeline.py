@@ -56,14 +56,8 @@ class BlueprintFactory() :
         self.batch_instance_count        = config["batch_instance_count"] if "batch_instance_count" in config else 1
         self.batch_instance_type         = config["batch_instance_type"] if "batch_instance_type" in config else "ml.c5.2xlarge"   
         self.batch_s3_output_uri         = config["batch_s3_output_uri"] if "batch_s3_output_uri" in config else None
-    
         if not self.batch_s3_output_uri :
             raise Exception("Missing configuration for batch_s3_output_uri")
-        
-        self.batch_in_filter             = config["batch_in_filter"] if "batch_in_filter" in config else "$"
-        self.batch_join_source           = config["batch_join_source"] if "batch_join_source" in config else "None"
-        self.batch_out_filter            = config["batch_out_filter"] if "batch_out_filter" in config else "$"
-        self.batch_split_type            = config["batch_split_type"] if "batch_split_type" in config else "None"
             
         self.batch_instance_count        = config["batch_instance_count"] if "batch_instance_count" in config else 1
         self.batch_instance_type         = config["batch_instance_type"] if "batch_instance_type" in config else "ml.c5.2xlarge" 
@@ -149,16 +143,12 @@ class BlueprintFactory() :
 
         transform_step = TransformStep(name="DefaultRiskScores",
                                        transformer=transformer,
-                                       inputs=TransformInput(  input_filter=self.batch_in_filter,
-                                                               output_filter=self.batch_out_filter,
-                                                               join_source=self.batch_join_source,
-                                                               split_type=self.batch_split_type,
-                                                               data=data_wrangler_step
+                                       inputs=TransformInput(data=data_wrangler_step
                                                               .properties
                                                               .ProcessingOutputConfig
                                                               .Outputs[self.dw_output_name].S3Output.S3Uri,
-                                                               content_type= 'text/csv'))
-        
+                                                              content_type= 'text/csv'))
+
         wf_instance_type = ParameterString(name="InstanceType", default_value=self.wf_instance_type)
         wf_instance_count = ParameterInteger(name="InstanceCount", default_value=self.wf_instance_count)
         pipeline_name = f"pipeline-{flow_export_name}"
